@@ -8,16 +8,19 @@ import seaborn as sns
 
 
 
-
+#get range of dates
 dates= pd.date_range(start="2021-01-01",end="2021-12-31")
 
 len(dates)
 
+#assign stable gas fee
 gwei=[125]*len(dates)
 
+#import difficulty from etherscan
 df=pd.read_csv('export-BlockDifficulty.csv')
 df
 
+#create indexed range for dates
 extrapolated_values=list(range((2079-97),2347,1))
 extrapolated_values
 
@@ -31,7 +34,7 @@ extrapolated_values
 
 
 
-
+#build difficulty model
 df1=df.tail(98)
 df1
 
@@ -46,7 +49,7 @@ test
 #================================================#
 #================================================#
 
-
+#get linear regression equation
 x=extrapolator.get_coeffs()
 y=list(range(0,len(x)))
 
@@ -61,11 +64,16 @@ equation=linregress(y, x)
 maindf=pd.DataFrame(dates, test)
 maindf=maindf.reset_index()
 maindf.columns=['difficulty','Date']
+
+#normalise difficulty to todays
 maindf['difficulty_constant']=6629.625/maindf['difficulty']
+
+#create earnings based on precalculated eth reward/gas
 maindf['100mhs_Earnings_Per_Month_USD']=8.14*maindf['difficulty_constant']*30
 maindf['100mhs_Earnings_Per_Day_USD']=8.14*maindf['difficulty_constant']
 maindf
 
+#apply EIP1559 percentage cut after mid July through list comp
 vals=maindf['100mhs_Earnings_Per_Month_USD'].values.tolist()
 vals
 
@@ -81,7 +89,8 @@ for item in vals:
         vals_adjusted.append((item/100)*70)
         
     i+=1
-        
+
+#create monthly cumulatives based on miner start date (+30 for each month)
 maindf['Adjusted for EIP1559']=vals_adjusted
 maindf['Daily for EIP1559']=maindf['Adjusted for EIP1559']/30
 
@@ -119,12 +128,13 @@ maindf['May_Earnings']=maindf['With Electricity and Taxes/ Daily'].tail(-120).cu
 
 
 
-
+#subset dataframe to only date, difficulty and earning columns to prepare for melt
 y = maindf[maindf.columns[-10:]]
 x=maindf[maindf.columns[:2]]
 y
 x
 
+#melt into useable format
 result = pd.concat([y, x], axis=1)
 dfmelt= pd.melt(result, id_vars=['difficulty','Date'], value_vars=['Jan_Revenue', 'Jan_Earnings','Feb_Revenue', 'Feb_Earnings','March_Revenue', 'March_Earnings','April_Revenue', 'April_Earnings','May_Revenue', 'May_Earnings'])
 
@@ -162,7 +172,7 @@ dfmelt
 
 
 
-
+#use relplot to create facet
 g=sns.relplot(
     data=dfmelt,
     x="Date", y="value",
